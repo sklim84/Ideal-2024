@@ -1,0 +1,24 @@
+{
+    "columns": {
+        "WD_YM": {
+            "sdtype": "datetime",
+            "datetime_format": "%Y%m"
+        },
+        "UTIZN_CO_APRVNO": {
+            "sdtype": "categorical"
+        },
+        "CALT_METH_NM": {
+            "sdtype": "categorical"
+        },
+        "WD_BANKCD": {
+            "sdtype": "categorical"
+        },
+        "DPOST_BANKCD": {
+            "sdtype": "categorical"
+        },
+        "TRNSR_REQ_AMT": {
+            "sdtype": "numerical"
+        }
+    },
+    "METADATA_SPEC_VERSION": "SINGLE_TABLE_V1"
+}
