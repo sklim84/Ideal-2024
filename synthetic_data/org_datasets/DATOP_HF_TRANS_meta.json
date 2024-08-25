@@ -1,0 +1,21 @@
+{
+    "METADATA_SPEC_VERSION": "SINGLE_TABLE_V1",
+    "columns": {
+        "BASE_YM": {
+            "sdtype": "datetime",
+            "datetime_format": "%Y%m"
+        },
+        "HNDE_BANK_RPTV_CODE": {
+            "sdtype": "categorical"
+        },
+        "OPENBANK_RPTV_CODE": {
+            "sdtype": "categorical"
+        },
+        "FND_TPCD": {
+            "sdtype": "categorical"
+        },
+        "TRAN_AMT": {
+            "sdtype": "numerical"
+        }
+    }
+}
