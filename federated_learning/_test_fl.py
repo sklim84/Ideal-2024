@@ -73,6 +73,7 @@ def train_ctgan(data, embedding_dim=128, generator_dim=(256, 256), discriminator
         pac=pac,
         epochs=10
     )
+    print(model)
 
     # FIXME discrete_columns 설정 (OPENBANK_RPTV_CODE,FND_TPCD 추가)
     model.fit(data_df, discrete_columns=['HNDE_BANK_RPTV_CODE'])
