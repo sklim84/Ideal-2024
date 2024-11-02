@@ -70,7 +70,7 @@ if __name__ == "__main__":
         model = train_ctgan(data)
 
         if model:
-            synthetic_data = model.sample(100)
+            synthetic_data = model.sample(10)
             synthetic_data['TRAN_AMT'] = synthetic_data['TRAN_AMT'].abs()
             all_synthetic_data = pd.concat([all_synthetic_data, synthetic_data], ignore_index=True)
         else:

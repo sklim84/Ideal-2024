@@ -97,10 +97,10 @@ def pad_tensor(tensor, target_shape):
 
 def merge_models(models, model_details):
     if not models:
-       return None
+        return None
 
     # FIXME models[0]을 기준으로 하는 문제 : HNDE_BANK_RPTV_CODE=100만 생성됨
-    merged_model = copy.deepcopy(models[1])
+    merged_model = copy.deepcopy(models[0])
     merged_state_dict = OrderedDict()
 
     num_models = len(models)
@@ -116,40 +116,26 @@ def merge_models(models, model_details):
             # FIXME 모델 통합 시 차원 불일치 이슈로 차원을 맞추는 패딩 로직 추가
             padded_tensor = pad_tensor(model_state[key], target_shape)
 
-            try:
-                # Check for shape mismatch
-                if model_state[key].shape != target_shape:
-                    print(f"Shape mismatch for key {key}: {model_state[key].shape} vs {target_shape}")
-                    continue  # Skip this key if there is a shape mismatch
-
-                if key not in merged_state_dict:
-                    merged_state_dict[key] = model_state[key].clone()
-                else:
-                    merged_state_dict[key] += model_state[key].float()
-
-            except Exception as e:
-                print(f"Error processing key {key}: {e}")
-
-#if key not in merged_state_dict:
-#                merged_state_dict[key] = padded_tensor.clone()
-#            else:
-#                if merged_state_dict[key].shape != padded_tensor.shape:
-#                    print(
-#                        f"Error merging key {key}: Parameter size mismatch. {merged_state_dict[key].shape} vs {padded_tensor.shape}")
-#                    for bank_code, mdl in model_details.items():
-#                        if mdl is model:
-#                            print(f"Error originating from Bank Code: {bank_code}")
-#                            print(f"Model source key: {key}, Model: {model}")
-#                            break
-#                    return None
-#                merged_state_dict[key] = merged_state_dict[key].float() + padded_tensor.float()
+            if key not in merged_state_dict:
+                merged_state_dict[key] = padded_tensor.clone()
+            else:
+                if merged_state_dict[key].shape != padded_tensor.shape:
+                    print(
+                        f"Error merging key {key}: Parameter size mismatch. {merged_state_dict[key].shape} vs {padded_tensor.shape}")
+                    for bank_code, mdl in model_details.items():
+                        if mdl is model:
+                            print(f"Error originating from Bank Code: {bank_code}")
+                            print(f"Model source key: {key}, Model: {model}")
+                            break
+                    return None
+                merged_state_dict[key] = merged_state_dict[key].float() + padded_tensor.float()
 
     # 파라미터 평균값 계산(FedAVG)
     for key in merged_state_dict:
-        merged_state_dict[key] = merged_state_dict[key].float() / num_models
+        merged_state_dict[key] /= num_models
         merged_state_dict[key] = merged_state_dict[key].type(model_state[key].dtype)
 
-    merged_model._generator.load_state_dict(merged_state_dict, strict=False)
+    merged_model._generator.load_state_dict(merged_state_dict)
 
     return merged_model
 
