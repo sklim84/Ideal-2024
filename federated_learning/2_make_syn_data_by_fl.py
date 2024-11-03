@@ -52,7 +52,7 @@ def create_clients(data):
     return clients, data_ptrs
 
 
-def train_ctgan(data, embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256), pac=10):
+def train_ctgan(data, embedding_dim=32, generator_dim=(64, 64), discriminator_dim=(64, 64), pac=10):
     print("Data content (first 5 rows):")
     print(data[:5])
 
@@ -75,7 +75,7 @@ def train_ctgan(data, embedding_dim=128, generator_dim=(256, 256), discriminator
         generator_dim=generator_dim,
         discriminator_dim=discriminator_dim,
         pac=pac,
-        epochs=10
+        epochs=5
     )
     print(model)
 
@@ -94,10 +94,28 @@ def pad_tensor(tensor, target_shape):
 
     return padded_tensor
 
+def print_object_details(obj):
+    print("Object details:")
+    for attribute, value in obj.__dict__.items():
+        print(f"{attribute}: {value}")
+
+def print_generator_out_features(ctgan_model):
+    print("Out features in each layer of Generator:")
+    for layer_name, layer in ctgan_model._generator.seq.named_children():
+        if isinstance(layer, torch.nn.Linear):
+            print(f"{layer_name}: Linear layer out_features = {layer.out_features}")
+        elif hasattr(layer, 'fc') and isinstance(layer.fc, torch.nn.Linear):
+            print(f"{layer_name}: Residual fc layer out_features = {layer.fc.out_features}")
 
 def merge_models(models, model_details):
     if not models:
        return None
+
+    print_object_details(models[0])
+    print_generator_out_features(models[0])
+    print("---------------------------------")
+    print_object_details(models[1])
+    print_generator_out_features(models[1])
 
     # FIXME models[0]을 기준으로 하는 문제 : HNDE_BANK_RPTV_CODE=100만 생성됨
     merged_model = copy.deepcopy(models[1])
@@ -116,33 +134,33 @@ def merge_models(models, model_details):
             # FIXME 모델 통합 시 차원 불일치 이슈로 차원을 맞추는 패딩 로직 추가
             padded_tensor = pad_tensor(model_state[key], target_shape)
 
-            try:
-                # Check for shape mismatch
-                if model_state[key].shape != target_shape:
-                    print(f"Shape mismatch for key {key}: {model_state[key].shape} vs {target_shape}")
-                    continue  # Skip this key if there is a shape mismatch
+#            try:
+#                # Check for shape mismatch
+#                if model_state[key].shape != target_shape:
+#                    print(f"Shape mismatch for key {key}: {model_state[key].shape} vs {target_shape}")
+#                    continue  # Skip this key if there is a shape mismatch
+#
+#                if key not in merged_state_dict:
+#                    merged_state_dict[key] = model_state[key].clone()
+ #               else:
+#                    merged_state_dict[key] += model_state[key].float()
+#
+#            except Exception as e:
+#                print(f"Error processing key {key}: {e}")
 
-                if key not in merged_state_dict:
-                    merged_state_dict[key] = model_state[key].clone()
-                else:
-                    merged_state_dict[key] += model_state[key].float()
-
-            except Exception as e:
-                print(f"Error processing key {key}: {e}")
-
-#if key not in merged_state_dict:
-#                merged_state_dict[key] = padded_tensor.clone()
-#            else:
-#                if merged_state_dict[key].shape != padded_tensor.shape:
-#                    print(
-#                        f"Error merging key {key}: Parameter size mismatch. {merged_state_dict[key].shape} vs {padded_tensor.shape}")
-#                    for bank_code, mdl in model_details.items():
-#                        if mdl is model:
-#                            print(f"Error originating from Bank Code: {bank_code}")
-#                            print(f"Model source key: {key}, Model: {model}")
-#                            break
-#                    return None
-#                merged_state_dict[key] = merged_state_dict[key].float() + padded_tensor.float()
+    if key not in merged_state_dict:
+        merged_state_dict[key] = padded_tensor.clone()
+    else:
+        if merged_state_dict[key].shape != padded_tensor.shape:
+            print(
+                      f"Error merging key {key}: Parameter size mismatch. {merged_state_dict[key].shape} vs {padded_tensor.shape}")
+            for bank_code, mdl in model_details.items():
+                if mdl is model:
+                    print(f"Error originating from Bank Code: {bank_code}")
+                    print(f"Model source key: {key}, Model: {model}")
+                    break
+                return None
+                merged_state_dict[key] = merged_state_dict[key].float() + padded_tensor.float()
 
     # 파라미터 평균값 계산(FedAVG)
     for key in merged_state_dict:
