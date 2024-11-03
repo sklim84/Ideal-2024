@@ -188,20 +188,16 @@ if __name__ == "__main__":
     model_details = {}
 
     for bank_code, client in clients.items():
-        try:
-            print(f'##### bank code:{bank_code} START TRAINING #####')
-            data_ptr = data_ptrs[bank_code]
-            data_remote = data_ptr.get()
+        print(f'##### bank code:{bank_code} START TRAINING #####')
+        data_ptr = data_ptrs[bank_code]
+        data_remote = data_ptr.get()
 
-            if isinstance(data_remote, sy.Tensor):
-                data_remote = data_remote.child
+        if isinstance(data_remote, sy.Tensor):
+            data_remote = data_remote.child
 
-            model = train_ctgan(data_remote)
-            model_ptrs.append(model)
-            model_details[bank_code] = model
-
-        except Exception as e:
-            print(f"Error processing bank code {bank_code}: {e}")
+        model = train_ctgan(data_remote)
+        model_ptrs.append(model)
+        model_details[bank_code] = model
 
     # Merge models
     federated_model = merge_models(model_ptrs, model_details)
