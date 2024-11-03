@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import syft as sy
-from ctgan import CTGAN
+# from ctgan import CTGAN
+from our_ctgan import CTGAN
 import torch
 import copy
 from collections import OrderedDict
@@ -118,7 +119,7 @@ def merge_models(models, model_details):
     print_generator_out_features(models[1])
 
     # FIXME models[0]을 기준으로 하는 문제 : HNDE_BANK_RPTV_CODE=100만 생성됨
-    merged_model = copy.deepcopy(models[1])
+    merged_model = copy.deepcopy(models[0])
     merged_state_dict = OrderedDict()
 
     num_models = len(models)
@@ -247,7 +248,7 @@ if __name__ == "__main__":
 
         print(metadata)
         
-        metadata.visualize()
+        # metadata.visualize()
 
         quality_report.get_details('Column Shapes')
     else:

@@ -3,6 +3,9 @@ import pandas as pd
 from sdv.single_table import CTGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 from sdv.evaluation.single_table import evaluate_quality
+import warnings
+
+warnings.filterwarnings("ignore")
 
 # 원본 데이터 로드
 original_data = pd.read_csv("../synthetic_data/org_datasets/DATOP_HF_TRANS_ENC_CODE.csv")
@@ -27,7 +30,7 @@ metadata.update_column("FND_TPCD", sdtype="numerical")
 
 # 각 합성 데이터셋 평가
 for i, synthetic_data in enumerate(synthetic_data_list):
-    print(f"Evaluating synthetic data: synthetic_data_type{i+1}.csv")
+    print(f"\n##### Evaluating synthetic data: synthetic_data_type{i+1}.csv")
 
     #if(i == 2):
     #    original_data = pd.read_csv("../datasets/DATOP_HF_TRANS_100.csv")
@@ -52,7 +55,7 @@ for i, synthetic_data in enumerate(synthetic_data_list):
 
 # 최종 평가 결과 출력
 for key, result in evaluation_results.items():
-    print(f"\nResults for {key}:")
+    print(f"\n##### Results for {key}:")
     print(f"Validity Score: {result['Validity Score']}")
     print("Column Shapes:\n", result["Column Shapes"])
     print("Column Pair Trends:\n", result["Column Pair Trends"])
