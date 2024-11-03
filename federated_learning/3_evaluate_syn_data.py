@@ -9,6 +9,7 @@ warnings.filterwarnings("ignore")
 
 # 원본 데이터 로드
 original_data = pd.read_csv("../synthetic_data/org_datasets/DATOP_HF_TRANS_ENC_CODE.csv")
+original_data = original_data[[col for col in original_data.columns if col != "HNDE_BANK_RPTV_CODE"]]
 
 # 세 개의 합성 데이터 로드
 synthetic_data_files = ["data/synthetic_data_type1.csv", "data/synthetic_data_type2.csv", "data/synthetic_data_type3.csv"]
@@ -24,13 +25,14 @@ metadata.detect_from_dataframe(original_data)
 # 열 유형을 지정 (예시)
 metadata.update_column("BASE_YM", sdtype="datetime", datetime_format="%Y%m")
 metadata.update_column("TRAN_AMT", sdtype="numerical")
-metadata.update_column("HNDE_BANK_RPTV_CODE", sdtype="numerical")
+#metadata.update_column("HNDE_BANK_RPTV_CODE", sdtype="numerical")
 metadata.update_column("OPENBANK_RPTV_CODE", sdtype="numerical")
 metadata.update_column("FND_TPCD", sdtype="numerical")
 
 # 각 합성 데이터셋 평가
 for i, synthetic_data in enumerate(synthetic_data_list):
     print(f"\n##### Evaluating synthetic data: synthetic_data_type{i+1}.csv")
+    synthetic_data = synthetic_data[[col for col in original_data.columns if col != "HNDE_BANK_RPTV_CODE"]]
 
     #if(i == 2):
     #    original_data = pd.read_csv("../datasets/DATOP_HF_TRANS_100.csv")
@@ -58,5 +60,5 @@ for key, result in evaluation_results.items():
     print(f"\n##### Results for {key}:")
     print(f"Validity Score: {result['Validity Score']}")
     print("Column Shapes:\n", result["Column Shapes"])
-    print("Column Pair Trends:\n", result["Column Pair Trends"])
+#    print("Column Pair Trends:\n", result["Column Pair Trends"])
 

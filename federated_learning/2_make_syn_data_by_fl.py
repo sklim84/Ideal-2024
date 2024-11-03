@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 import syft as sy
-# from ctgan import CTGAN
-from our_ctgan import CTGAN
+from ctgan import CTGAN
 import torch
 import copy
 from collections import OrderedDict
@@ -76,7 +75,7 @@ def train_ctgan(data, embedding_dim=32, generator_dim=(64, 64), discriminator_di
         generator_dim=generator_dim,
         discriminator_dim=discriminator_dim,
         pac=pac,
-        epochs=5
+        epochs=20
     )
     print(model)
 
@@ -123,6 +122,7 @@ def merge_models(models, model_details):
     merged_state_dict = OrderedDict()
 
     num_models = len(models)
+    print(num_models)
 
     for model in models:
         model_state = model._generator.state_dict()
@@ -188,16 +188,20 @@ if __name__ == "__main__":
     model_details = {}
 
     for bank_code, client in clients.items():
-        print(f'##### bank code:{bank_code} START TRAINING #####')
-        data_ptr = data_ptrs[bank_code]
-        data_remote = data_ptr.get()
+        try:
+            print(f'##### bank code:{bank_code} START TRAINING #####')
+            data_ptr = data_ptrs[bank_code]
+            data_remote = data_ptr.get()
 
-        if isinstance(data_remote, sy.Tensor):
-            data_remote = data_remote.child
+            if isinstance(data_remote, sy.Tensor):
+                data_remote = data_remote.child
 
-        model = train_ctgan(data_remote)
-        model_ptrs.append(model)
-        model_details[bank_code] = model
+            model = train_ctgan(data_remote)
+            model_ptrs.append(model)
+            model_details[bank_code] = model
+
+        except Exception as e:
+            print(f"Error processing bank code {bank_code}: {e}")
 
     # Merge models
     federated_model = merge_models(model_ptrs, model_details)
@@ -237,14 +241,16 @@ if __name__ == "__main__":
             sdtype='numerical'
         )
 
-        quality_report = evaluate_quality(data,
+        original_data = pd.read_csv("../synthetic_data/org_datasets/DATOP_HF_TRANS_ENC_CODE.csv")
+
+        quality_report = evaluate_quality(original_data,
                                           synthetic_data,
                                           metadata
                                         )
 
         print(metadata)
         
-        # metadata.visualize()
+        metadata.visualize()
 
         quality_report.get_details('Column Shapes')
     else:
