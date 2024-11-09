@@ -10,6 +10,7 @@ from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequ
 
 from ctgan.data_sampler import DataSampler
 # from our_data_sampler import DataSampler
+# from ctgan.data_transformer import DataTransformer
 from our_data_transformer import DataTransformer
 from ctgan.synthesizers.base import BaseSynthesizer, random_state
 
@@ -314,6 +315,8 @@ class CTGAN(BaseSynthesizer):
             self._log_frequency)
 
         data_dim = self._transformer.output_dimensions
+
+        print(f'####### output_dimensions: {data_dim}')
 
         self._generator = Generator(
             self._embedding_dim + self._data_sampler.dim_cond_vec(),

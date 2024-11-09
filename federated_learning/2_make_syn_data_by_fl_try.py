@@ -10,6 +10,7 @@ import warnings
 from sdv.single_table import CTGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 from sdv.evaluation.single_table import evaluate_quality
+from our_data_transformer import DataTransformer
 
 warnings.filterwarnings("ignore")
 
@@ -58,6 +59,7 @@ def create_clients(bank_groups):
 
     return clients, data_ptrs
 
+
 def pad_tensor(tensor, target_shape):
     current_shape = tensor.shape
     if current_shape == target_shape:
@@ -70,14 +72,12 @@ def pad_tensor(tensor, target_shape):
     return padded_tensor
 
 
-def train_ctgan(data, emb_dim=32, gen_dim=64, dis_dim=64, epoch=10, pac=10):
+def train_ctgan(data, total_columns, discrete_columns, emb_dim=32, gen_dim=64, dis_dim=64, epoch=10, pac=10):
     print("Data content (first 5 rows):")
     print(data[:5])
 
     data_list = data.tolist()
-
-    columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD', 'TRAN_AMT']
-    data_df = pd.DataFrame(data_list, columns=columns)
+    data_df = pd.DataFrame(data_list, columns=total_columns)
 
     model = CTGAN(
         embedding_dim=emb_dim,
@@ -88,27 +88,35 @@ def train_ctgan(data, emb_dim=32, gen_dim=64, dis_dim=64, epoch=10, pac=10):
     )
     # print(model)
 
-    # FIXME discrete_columns 설정 (OPENBANK_RPTV_CODE,FND_TPCD 추가)
-    # model.fit(data_df, discrete_columns=['HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD'])
-    model.fit(data_df, discrete_columns=['HNDE_BANK_RPTV_CODE'])
+    model.fit(data_df, discrete_columns=discrete_columns)
     return model
+
 
 def initialize_empty_model(model_template):
     empty_model = copy.deepcopy(model_template)
-    empty_state_dict = OrderedDict((key, torch.zeros_like(param)) for key, param in model_template._generator.state_dict().items())
+    empty_state_dict = OrderedDict(
+        (key, torch.zeros_like(param)) for key, param in model_template._generator.state_dict().items())
     empty_model._generator.load_state_dict(empty_state_dict, strict=False)
     return empty_model
 
 
-def merge_models(models):
+def merge_data_transformer(train_data, discrete_columns):
+    data_transformer = DataTransformer()
+    data_transformer.fit(train_data, discrete_columns)
+    return data_transformer
+
+
+def merge_models(models, merged_data_transformer):
     # print_object_details(models[0])
     # print_generator_out_features(models[0])
     # print("---------------------------------")
     # print_object_details(models[1])
     # print_generator_out_features(models[1])
 
-    # models[0] 모델 구조 복사, 빈 모델(가중치=0)  생성
+    # models[0] 모델 구조 복사, 빈 모델(가중치=0) 생성
     merged_model = initialize_empty_model(models[0])
+    merged_model._transformer = merged_data_transformer
+
     # merged_model = copy.deepcopy(models[0])
     merged_state_dict = OrderedDict()
 
@@ -148,16 +156,24 @@ def merge_models(models):
 if __name__ == "__main__":
     device = initialize_device()
 
-    # 타행이체거래내역 : 100, 101, 102
-    data_100 = load_data('./datasets/DATOP_HF_TRANS_100.csv', num_samples=100)
-    data_101 = load_data('./datasets/DATOP_HF_TRANS_101.csv', num_samples=100)
-    data_102 = load_data('./datasets/DATOP_HF_TRANS_102.csv', num_samples=100)
+    num_samples_org = 100   # each / total= x3
+    num_samples_syn = 300   # total
 
-    data_total = pd.concat([data_100, data_101, data_102], axis=0).reset_index(drop=True)
+    bank_codes = [100, 102, 104]
+    datasets = [
+        load_data(f'./datasets/DATOP_HF_TRANS_{bank_codes[0]}_iid.csv', num_samples=num_samples_org),
+        load_data(f'./datasets/DATOP_HF_TRANS_{bank_codes[1]}_iid.csv', num_samples=num_samples_org),
+        load_data(f'./datasets/DATOP_HF_TRANS_{bank_codes[2]}_iid.csv', num_samples=num_samples_org)
+    ]
+
+    data_total = pd.concat(datasets, axis=0).reset_index(drop=True)
+
+    total_columns = data_total.columns
+    discrete_columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD']
+    # discrete_columns = ['HNDE_BANK_RPTV_CODE']
     print(data_total)
 
-    bank_groups = [(100, data_100), (101, data_101), (102, data_102)]
-    # bank_groups = [(101, data_101), (100, data_100), (102, data_102)]
+    bank_groups = [(bank_codes[0], datasets[0]), (bank_codes[1], datasets[1]), (bank_codes[2], datasets[2])]
 
     # 클라이언트, 데이터 포인터 생성
     clients, data_ptrs = create_clients(bank_groups)
@@ -170,17 +186,25 @@ if __name__ == "__main__":
         data_remote = data_ptr.get()
         data_remote = data_remote.child
 
-        model = train_ctgan(data_remote)
+        model = train_ctgan(data=data_remote,
+                            total_columns=data_total.columns,
+                            discrete_columns=discrete_columns,
+                            emb_dim=32,
+                            gen_dim=64, dis_dim=64,
+                            epoch=10, pac=10)
 
         # print('##### each model sample')
         # print(model.sample(5))
 
         model_ptrs.append(model)
 
-    # Merge models
-    federated_model = merge_models(model_ptrs)
+    # Merge data transformer
+    data_transformer = merge_data_transformer(data_total, discrete_columns)
 
-    synthetic_data = federated_model.sample(300)
+    # Merge models
+    federated_model = merge_models(model_ptrs, data_transformer)
+
+    synthetic_data = federated_model.sample(num_samples_syn)
     synthetic_data['TRAN_AMT'] = synthetic_data['TRAN_AMT'].abs()
     print("Synthetic Data Generated by the Federated Model:")
     print(synthetic_data)

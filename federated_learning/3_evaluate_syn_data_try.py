@@ -25,9 +25,9 @@ metadata.detect_from_dataframe(original_data)
 # 열 유형을 지정 (예시)
 metadata.update_column("BASE_YM", sdtype="datetime", datetime_format="%Y%m")
 metadata.update_column("TRAN_AMT", sdtype="numerical")
-metadata.update_column("HNDE_BANK_RPTV_CODE", sdtype="numerical")
-metadata.update_column("OPENBANK_RPTV_CODE", sdtype="numerical")
-metadata.update_column("FND_TPCD", sdtype="numerical")
+metadata.update_column("HNDE_BANK_RPTV_CODE", sdtype="categorical")
+metadata.update_column("OPENBANK_RPTV_CODE", sdtype="categorical")
+metadata.update_column("FND_TPCD", sdtype="categorical")
 
 # 각 합성 데이터셋 평가
 for i, synthetic_data in enumerate(synthetic_data_list):

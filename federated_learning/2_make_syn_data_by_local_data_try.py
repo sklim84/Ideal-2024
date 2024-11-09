@@ -52,34 +52,36 @@ def train_ctgan(data, emb_dim=32, gen_dim=64, dis_dim=64, epoch=10, pac=10):
     )
     print(model)
 
-    # model.fit(data_df, discrete_columns=['HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD'])
-    model.fit(data_df, discrete_columns=['HNDE_BANK_RPTV_CODE'])
+    model.fit(data_df, discrete_columns=['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD'])
+    # model.fit(data_df, discrete_columns=['HNDE_BANK_RPTV_CODE'])
     return model
 
 
 if __name__ == "__main__":
     device = initialize_device()
 
-    # 모든 CSV 파일 경로를 불러오기
-    # csv_files = glob.glob('./datasets/*.csv')
+    num_samples_org = 100  # each / total= x3
+    num_samples_syn = 100  # each / total= x3
+
+    bank_codes = [100, 102, 104]
     csv_files = [
-        './datasets/DATOP_HF_TRANS_100.csv',
-        './datasets/DATOP_HF_TRANS_101.csv',
-        './datasets/DATOP_HF_TRANS_102.csv'
+        f'./datasets/DATOP_HF_TRANS_{bank_codes[0]}_iid.csv',
+        f'./datasets/DATOP_HF_TRANS_{bank_codes[1]}_iid.csv',
+        f'./datasets/DATOP_HF_TRANS_{bank_codes[2]}_iid.csv'
     ]
 
     all_synthetic_data = pd.DataFrame()
 
     for file_path in csv_files:
         print(f"Processing file: {file_path}")
-        data = load_data(file_path, num_samples=1000)
+        data = load_data(file_path, num_samples=num_samples_org)
 
         print('total data samples: ')
 
         model = train_ctgan(data)
 
         if model:
-            synthetic_data = model.sample(100)
+            synthetic_data = model.sample(num_samples_syn)
             synthetic_data['TRAN_AMT'] = synthetic_data['TRAN_AMT'].abs()
             all_synthetic_data = pd.concat([all_synthetic_data, synthetic_data], ignore_index=True)
         else:

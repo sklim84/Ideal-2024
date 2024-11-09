@@ -156,6 +156,10 @@ class DataTransformer(object):
             column_name = column_transform_info.column_name
             data = raw_data[[column_name]]
             if column_transform_info.column_type == 'continuous':
+
+                print(f'##### column_name: {column_name}, original data: {data.shape}, transformed data: '
+                      f'{self._transform_continuous(column_transform_info, data).shape}')
+
                 column_data_list.append(self._transform_continuous(column_transform_info, data))
             else:
                 column_data_list.append(self._transform_discrete(column_transform_info, data))
