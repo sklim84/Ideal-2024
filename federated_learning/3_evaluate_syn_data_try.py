@@ -4,24 +4,11 @@ from sdv.single_table import CTGANSynthesizer
 from sdv.metadata import SingleTableMetadata
 from sdv.evaluation.single_table import evaluate_quality
 import warnings
-import numpy as np
 
 warnings.filterwarnings("ignore")
 
-def load_data(file_path, num_samples=1000):
-    data = pd.read_csv(file_path)[:num_samples]
-    data = data.apply(pd.to_numeric, errors='coerce').fillna(0).astype(np.int64)
-    return data
-
 # 원본 데이터 로드
-# original_data = pd.read_csv("../synthetic_data/org_datasets/DATOP_HF_TRANS_ENC_CODE.csv")
-# original_data = original_data[[col for col in original_data.columns if col != "HNDE_BANK_RPTV_CODE"]]
-
-data_100 = load_data('./datasets/DATOP_HF_TRANS_100.csv', num_samples=100)
-data_101 = load_data('./datasets/DATOP_HF_TRANS_101.csv', num_samples=100)
-data_102 = load_data('./datasets/DATOP_HF_TRANS_102.csv', num_samples=100)
-
-original_data = pd.concat([data_100, data_101, data_102], axis=0).reset_index(drop=True)
+original_data = pd.read_csv("../synthetic_data/org_datasets/DATOP_HF_TRANS_ENC_CODE.csv")
 # original_data = original_data[[col for col in original_data.columns if col != "HNDE_BANK_RPTV_CODE"]]
 
 # 세 개의 합성 데이터 로드
@@ -38,7 +25,7 @@ metadata.detect_from_dataframe(original_data)
 # 열 유형을 지정 (예시)
 metadata.update_column("BASE_YM", sdtype="datetime", datetime_format="%Y%m")
 metadata.update_column("TRAN_AMT", sdtype="numerical")
-#metadata.update_column("HNDE_BANK_RPTV_CODE", sdtype="numerical")
+metadata.update_column("HNDE_BANK_RPTV_CODE", sdtype="numerical")
 metadata.update_column("OPENBANK_RPTV_CODE", sdtype="numerical")
 metadata.update_column("FND_TPCD", sdtype="numerical")
 
@@ -46,6 +33,9 @@ metadata.update_column("FND_TPCD", sdtype="numerical")
 for i, synthetic_data in enumerate(synthetic_data_list):
     print(f"\n##### Evaluating synthetic data: synthetic_data_type{i+1}.csv")
     # synthetic_data = synthetic_data[[col for col in original_data.columns if col != "HNDE_BANK_RPTV_CODE"]]
+
+    #if(i == 2):
+    #    original_data = pd.read_csv("../datasets/DATOP_HF_TRANS_100.csv")
 
     # 품질 보고서 생성
     quality_report = evaluate_quality(original_data, synthetic_data, metadata)

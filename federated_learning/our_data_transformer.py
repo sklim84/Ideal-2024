@@ -117,21 +117,30 @@ class DataTransformer(object):
         #  Converts the transformed data to the appropriate output format.
         #  The first column (ending in '.normalized') stays the same,
         #  but the lable encoded column (ending in '.component') is one hot encoded.
-        # output = np.zeros((len(transformed), column_transform_info.output_dimensions))
-        # output[:, 0] = transformed[f'{column_name}.normalized'].to_numpy()
-        # index = transformed[f'{column_name}.component'].to_numpy().astype(int)
-        # output[np.arange(index.size), index + 1] = 1.0
-
-        # FIXME 정보손실 발생
-        # Only retain the normalized column and use Label Encoding for component
-        output = np.zeros((len(transformed), 2))  # 고정된 열 개수: 2
+        output = np.zeros((len(transformed), column_transform_info.output_dimensions))
         output[:, 0] = transformed[f'{column_name}.normalized'].to_numpy()
-
-        # Label Encoding으로 component를 정수로 변환하여 두 번째 열에 저장
-        component_values = transformed[f'{column_name}.component'].to_numpy().astype(int)
-        output[:, 1] = component_values  # 정수형 레이블 값으로 추가
+        index = transformed[f'{column_name}.component'].to_numpy().astype(int)
+        output[np.arange(index.size), index + 1] = 1.0
 
         return output
+
+    # def _transform_continuous(self, column_transform_info, data):
+    #     column_name = data.columns[0]
+    #     flattened_column = data[column_name].to_numpy().flatten()
+    #     data = data.assign(**{column_name: flattened_column})
+    #     gm = column_transform_info.transform
+    #     transformed = gm.transform(data)
+    #
+    #     # FIXME 정보손실 발생
+    #     # Only retain the normalized column and use Label Encoding for component
+    #     output = np.zeros((len(transformed), 2))  # 고정된 열 개수: 2
+    #     output[:, 0] = transformed[f'{column_name}.normalized'].to_numpy()
+    #
+    #     # Label Encoding으로 component를 정수로 변환하여 두 번째 열에 저장
+    #     component_values = transformed[f'{column_name}.component'].to_numpy().astype(int)
+    #     output[:, 1] = component_values  # 정수형 레이블 값으로 추가
+    #
+    #     return output
 
     def _transform_discrete(self, column_transform_info, data):
         ohe = column_transform_info.transform

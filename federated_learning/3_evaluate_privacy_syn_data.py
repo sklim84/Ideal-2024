@@ -1,6 +1,6 @@
 import pandas as pd
 from sdmetrics.single_table import CategoricalCAP
-
+from sdv.metadata import SingleTableMetadata
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -21,12 +21,41 @@ for i, synthetic_data in enumerate(synthetic_data_list):
     print(f"\n##### Evaluating synthetic data: synthetic_data_type{i+1}.csv")
     #synthetic_data = synthetic_data[[col for col in original_data.columns if col != "HNDE_BANK_RPTV_CODE"]]
 
+    metadata = SingleTableMetadata()
+    metadata.detect_from_dataframe(synthetic_data)
+    metadata.update_column(
+        column_name='BASE_YM',
+        sdtype='datetime',
+        datetime_format='%Y%m'
+    )
+
+    metadata.update_column(
+        column_name='TRAN_AMT',
+        sdtype='numerical'
+    )
+
+    metadata.update_column(
+        column_name='HNDE_BANK_RPTV_CODE',
+        sdtype='numerical'
+    )
+
+    metadata.update_column(
+        column_name='OPENBANK_RPTV_CODE',
+        sdtype='numerical'
+    )
+
+    metadata.update_column(
+        column_name='FND_TPCD',
+        sdtype='numerical'
+    )
+
     # 품질 보고서 생성
     score = CategoricalCAP.compute(
         real_data=original_data.head(6200),
         synthetic_data=synthetic_data.head(6200),
+        # metadata = metadata,
         key_fields=['HNDE_BANK_RPTV_CODE'],
-        sensitive_fields=['OPENBANK_RPTV_CODE','FND_TPCD']
+        sensitive_fields=['TRAN_AMT', 'OPENBANK_RPTV_CODE','FND_TPCD']
     )
 
     print(score)

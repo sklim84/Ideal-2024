@@ -9,7 +9,8 @@ from torch import optim
 from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional
 
 from ctgan.data_sampler import DataSampler
-from our_transformer import DataTransformer
+# from our_data_sampler import DataSampler
+from our_data_transformer import DataTransformer
 from ctgan.synthesizers.base import BaseSynthesizer, random_state
 
 
