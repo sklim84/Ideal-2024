@@ -7,6 +7,7 @@ import copy
 from collections import OrderedDict
 import glob
 import warnings
+from utils import set_seed
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -23,7 +24,7 @@ def load_data(file_path, num_samples=1000):
     return data
 
 
-def train_ctgan(data, emb_dim=32, gen_dim=64, dis_dim=64, epoch=10, pac=10):
+def train_ctgan(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, dis_dim=16, batch_size=500, epoch=10, pac=10):
     print("Data content (first 5 rows):")
     print(data[:5])
 
@@ -33,31 +34,34 @@ def train_ctgan(data, emb_dim=32, gen_dim=64, dis_dim=64, epoch=10, pac=10):
     if isinstance(data, pd.DataFrame):
         data_list = data.values
     elif isinstance(data, np.ndarray):
-        data_list = pd.DataFrame(data.tolist(), columns=['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD', 'TRAN_AMT'])
+        data_list = pd.DataFrame(data.tolist(), columns=total_columns)
     else:
         raise ValueError(f"Unexpected data type: {type(data)}")
 
     if len(data_list) == 0 or len(data_list[0]) != 5:
         raise ValueError(f"Data does not have the expected shape: {data_list[:5]}")
 
-    columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD', 'TRAN_AMT']
-    data_df = pd.DataFrame(data_list, columns=columns)
+    # columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD', 'TRAN_AMT']
+    data_df = pd.DataFrame(data_list, columns=total_columns)
 
     model = CTGAN(
         embedding_dim=emb_dim,
         generator_dim=(gen_dim, gen_dim),
         discriminator_dim=(dis_dim, dis_dim),
+        batch_size=batch_size,
         epochs=epoch,
         pac=pac
     )
     print(model)
 
-    model.fit(data_df, discrete_columns=['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD'])
+    model.fit(data_df, discrete_columns=discrete_columns)
     # model.fit(data_df, discrete_columns=['HNDE_BANK_RPTV_CODE'])
     return model
 
 
 if __name__ == "__main__":
+    set_seed(2024)
+
     device = initialize_device()
 
     num_samples_org = 100  # each / total= x3
@@ -78,7 +82,17 @@ if __name__ == "__main__":
 
         print('total data samples: ')
 
-        model = train_ctgan(data)
+        total_columns = data.columns
+        discrete_columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD']
+
+        # model = train_ctgan(data)
+        model = train_ctgan(data=data,
+                            total_columns=total_columns,
+                            discrete_columns=discrete_columns,
+                            emb_dim=16,
+                            gen_dim=16, dis_dim=16,
+                            batch_size=500,
+                            epoch=10, pac=10)
 
         if model:
             synthetic_data = model.sample(num_samples_syn)
