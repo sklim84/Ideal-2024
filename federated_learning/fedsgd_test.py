@@ -65,7 +65,7 @@ def compute_gradients(model, data_remote, discrete_columns):
     # 모델 복사 (학습 전 파라미터를 유지)
     model_copy = copy.deepcopy(model)
     data_columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD', 'TRAN_AMT']
-    
+
     # 데이터가 syft.Tensor 객체일 경우에만 .get() 호출
     if isinstance(data_remote, sy.Tensor):
         data_remote = data_remote.get()  # 데이터를 원격에서 가져옵니다
@@ -78,7 +78,7 @@ def compute_gradients(model, data_remote, discrete_columns):
     print("Data columns:", data_df.columns)
 
     # 각 열 이름에 공백이 있을 경우를 대비해 strip() 적용
-    discrete_columns = [col.strip() for col in discrete_columns]
+    #discrete_columns = [col.strip() for col in discrete_columns]
 
     # 모델 복사본의 _generator가 정상적으로 초기화되었는지 확인
     if model_copy._generator is None:
@@ -87,25 +87,22 @@ def compute_gradients(model, data_remote, discrete_columns):
         missing_columns = [col for col in discrete_columns if col not in data_df.columns]
         if missing_columns:
             raise KeyError(f"Missing columns in data: {missing_columns}")
-        discrete_column_indices = [data_df.columns.get_loc(col) for col in discrete_columns]
         model_copy.fit(data_df, discrete_columns=discrete_columns)
 
-    # 데이터 학습 전에 열 이름을 인덱스로 변환
-    discrete_column_indices = [data_df.columns.get_loc(col) for col in discrete_columns]
+    # 학습 전 파라미터 저장 (학습 전 모델 파라미터)
+    initial_params = {name: param.clone().detach() for name, param in model_copy._generator.named_parameters()}
 
     # 모델 학습
     model_copy.fit(data_df, discrete_columns=discrete_columns)
 
-    # 이제 _generator가 초기화되었을 것이므로, 파라미터 클론
-    initial_params = {name: param.clone().detach() for name, param in model_copy._generator.named_parameters()}
-
-    # 학습 후의 파라미터 저장
+    # 학습 후 파라미터 저장
     updated_params = {name: param.clone().detach() for name, param in model_copy._generator.named_parameters()}
 
     # 그라디언트 계산 (학습 후 - 학습 전 파라미터)
     gradients = {name: updated_params[name] - initial_params[name] for name in initial_params.keys()}
 
     return gradients
+
 
 def merge_gradients(gradients_list, model):
     num_clients = len(gradients_list)
