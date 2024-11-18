@@ -160,6 +160,7 @@ class CTGAN(BaseSynthesizer):
         self._batch_size = batch_size
         self._discriminator_steps = discriminator_steps
         self._log_frequency = log_frequency
+        self._log_frequency = log_frequency
         self._verbose = verbose
         self._epochs = epochs
         self.pac = pac
