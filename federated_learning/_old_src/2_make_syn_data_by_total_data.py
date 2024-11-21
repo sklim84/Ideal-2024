@@ -61,7 +61,7 @@ if __name__ == "__main__":
     device = initialize_device()
 
     # 타행이체거래내역
-    file_path = '../synthetic_data/org_datasets/DATOP_HF_TRANS_ENC_CODE.csv'
+    file_path = '../../synthetic_data/org_datasets/DATOP_HF_TRANS_ENC_CODE.csv'
     data = load_data(file_path)
 
     model = train_ctgan(data)

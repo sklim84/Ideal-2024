@@ -1,13 +1,11 @@
+import warnings
+
 import numpy as np
 import pandas as pd
-import syft as sy
-from ctgan import CTGAN
 import torch
-import copy
-from collections import OrderedDict
-import glob
-import warnings
-from utils import set_seed
+from ctgan.synthesizers.tvae import TVAE
+
+from utils import set_seed, evaluate_syn_data
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -24,7 +22,8 @@ def load_data(file_path, num_samples=1000):
     return data
 
 
-def train_ctgan(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, dis_dim=16, batch_size=500, epoch=10, pac=10):
+def train_tvae(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, dis_dim=16, batch_size=500, epoch=10,
+               pac=10):
     print("Data content (first 5 rows):")
     print(data[:5])
 
@@ -44,14 +43,14 @@ def train_ctgan(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, d
     # columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD', 'TRAN_AMT']
     data_df = pd.DataFrame(data_list, columns=total_columns)
 
-    model = CTGAN(
+    model = TVAE(
         embedding_dim=emb_dim,
-        generator_dim=(gen_dim, gen_dim),
-        discriminator_dim=(dis_dim, dis_dim),
+        compress_dims=(gen_dim, gen_dim),
+        decompress_dims=(dis_dim, dis_dim),
         batch_size=batch_size,
-        epochs=epoch,
-        pac=pac
+        epochs=epoch
     )
+
     print(model)
 
     model.fit(data_df, discrete_columns=discrete_columns)
@@ -85,14 +84,13 @@ if __name__ == "__main__":
         total_columns = data.columns
         discrete_columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD']
 
-        # model = train_ctgan(data)
-        model = train_ctgan(data=data,
-                            total_columns=total_columns,
-                            discrete_columns=discrete_columns,
-                            emb_dim=16,
-                            gen_dim=16, dis_dim=16,
-                            batch_size=500,
-                            epoch=10, pac=10)
+        model = train_tvae(data=data,
+                           total_columns=total_columns,
+                           discrete_columns=discrete_columns,
+                           emb_dim=16,
+                           gen_dim=16, dis_dim=16,
+                           batch_size=500,
+                           epoch=10, pac=10)
 
         if model:
             synthetic_data = model.sample(num_samples_syn)
@@ -102,6 +100,19 @@ if __name__ == "__main__":
             print(f"Failed to train model for {file_path}")
 
     # 합성 데이터 전체를 하나의 CSV 파일로 저장
-    all_synthetic_data.to_csv('data/synthetic_data_type3.csv', index=False)
+    # all_synthetic_data.to_csv('data/synthetic_data_type3.csv', index=False)
     print("Combined Synthetic Data Generated:")
     print(all_synthetic_data)
+
+    syn_data_path = f'./datasets_syn/syn_type_lo_tvae_to_{num_samples_org * 3}_to_{num_samples_syn * 3}.csv'
+    all_synthetic_data.to_csv(syn_data_path, index=False)
+
+    # evaluation
+    df_results = evaluate_syn_data('./results/eval_results.csv',
+                                   './datasets/DATOP_HF_TRANS_100_102_104_iid.csv',
+                                   syn_data_path,
+                                   model_name='tvae',
+                                   method='local',
+                                   num_org=num_samples_org * 3,
+                                   num_syn=num_samples_syn * 3)
+    print(df_results)

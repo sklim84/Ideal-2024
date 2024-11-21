@@ -17,9 +17,9 @@ def load_data(file_path, num_samples=1000):
 # original_data = pd.read_csv("../synthetic_data/org_datasets/DATOP_HF_TRANS_ENC_CODE.csv")
 # original_data = original_data[[col for col in original_data.columns if col != "HNDE_BANK_RPTV_CODE"]]
 
-data_100 = load_data('./datasets/DATOP_HF_TRANS_100.csv', num_samples=100)
-data_101 = load_data('./datasets/DATOP_HF_TRANS_101.csv', num_samples=100)
-data_102 = load_data('./datasets/DATOP_HF_TRANS_102.csv', num_samples=100)
+data_100 = load_data('../datasets/DATOP_HF_TRANS_100.csv', num_samples=100)
+data_101 = load_data('../datasets/DATOP_HF_TRANS_101.csv', num_samples=100)
+data_102 = load_data('../datasets/DATOP_HF_TRANS_102.csv', num_samples=100)
 
 original_data = pd.concat([data_100, data_101, data_102], axis=0).reset_index(drop=True)
 # original_data = original_data[[col for col in original_data.columns if col != "HNDE_BANK_RPTV_CODE"]]
