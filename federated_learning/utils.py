@@ -73,12 +73,12 @@ def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, me
         "FND_TPCD": column_shapes.loc[column_shapes["Column"] == "FND_TPCD", "Score"].values[0],
     }
 
-    # ccap_score = CategoricalCAP.compute(
-    #     real_data=df_org,
-    #     synthetic_data=df_syn,
-    #     key_fields=['HNDE_BANK_RPTV_CODE'],
-    #     sensitive_fields=['TRAN_AMT', 'OPENBANK_RPTV_CODE', 'FND_TPCD']
-    # )
+    ccap_score = CategoricalCAP.compute(
+         real_data=df_org,
+         synthetic_data=df_syn,
+         key_fields=['HNDE_BANK_RPTV_CODE'],
+         sensitive_fields=['TRAN_AMT', 'OPENBANK_RPTV_CODE', 'FND_TPCD']
+    )
 
     new_row = {
         'Timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -90,7 +90,7 @@ def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, me
         'Overall Quality Score': validity_score,
         'Column Pair Trends': column_pair_trends_score,
         **column_scores,
-        # 'CategoricalCAP': ccap_score
+         'CategoricalCAP': ccap_score
     }
     df_results = pd.concat([df_results, pd.DataFrame([new_row])], ignore_index=True)
     df_results.to_csv(results_path, index=False)
