@@ -9,7 +9,7 @@ import pandas as pd
 from datetime import datetime
 from sdmetrics.single_table import CategoricalCAP
 from sdv.metadata import SingleTableMetadata
-
+import argparse
 
 # 시드 고정 함수
 def set_seed(seed):
@@ -56,18 +56,21 @@ def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, me
     validity_score = quality_report.get_score()
     column_shapes = quality_report.get_details("Column Shapes")
 
+    print(column_shapes.columns)
+
+
     column_pair_trends = quality_report.get_details("Column Pair Trends")
     column_pair_trends_score = column_pair_trends[
-        "Quality Score"].mean() if "Quality Score" in column_pair_trends.columns else None
+        "Score"].mean() if "Score" in column_pair_trends.columns else None
 
     column_scores = {
-        "BASE_YM": column_shapes.loc[column_shapes["Column"] == "BASE_YM", "Quality Score"].values[0],
-        "TRAN_AMT": column_shapes.loc[column_shapes["Column"] == "TRAN_AMT", "Quality Score"].values[0],
+        "BASE_YM": column_shapes.loc[column_shapes["Column"] == "BASE_YM", "Score"].values[0],
+        "TRAN_AMT": column_shapes.loc[column_shapes["Column"] == "TRAN_AMT", "Score"].values[0],
         "HNDE_BANK_RPTV_CODE":
-            column_shapes.loc[column_shapes["Column"] == "HNDE_BANK_RPTV_CODE", "Quality Score"].values[0],
+            column_shapes.loc[column_shapes["Column"] == "HNDE_BANK_RPTV_CODE", "Score"].values[0],
         "OPENBANK_RPTV_CODE":
-            column_shapes.loc[column_shapes["Column"] == "OPENBANK_RPTV_CODE", "Quality Score"].values[0],
-        "FND_TPCD": column_shapes.loc[column_shapes["Column"] == "FND_TPCD", "Quality Score"].values[0],
+            column_shapes.loc[column_shapes["Column"] == "OPENBANK_RPTV_CODE", "Score"].values[0],
+        "FND_TPCD": column_shapes.loc[column_shapes["Column"] == "FND_TPCD", "Score"].values[0],
     }
 
     # ccap_score = CategoricalCAP.compute(
@@ -93,3 +96,10 @@ def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, me
     df_results.to_csv(results_path, index=False)
 
     return df_results
+
+# 명령줄 인자 설정 함수
+def parse_args():
+    parser = argparse.ArgumentParser(description="Federated CTGAN Training Script")
+    parser.add_argument("--num_samples_org", type=int, default=100, help="Number of original samples per client dataset")
+    parser.add_argument("--num_samples_syn", type=int, default=300, help="Number of synthetic samples to generate")
+    return parser.parse_args()

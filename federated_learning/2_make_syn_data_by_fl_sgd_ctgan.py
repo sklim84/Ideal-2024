@@ -9,7 +9,7 @@ from ctgan.data_sampler import DataSampler
 
 from our_ctgan import CTGAN
 from our_data_transformer import DataTransformer
-from utils import set_seed, evaluate_syn_data
+from utils import set_seed, evaluate_syn_data, parse_args
 
 warnings.filterwarnings("ignore")
 
@@ -152,8 +152,10 @@ if __name__ == "__main__":
     device = initialize_device()
 
     # Load and preprocess data
-    num_samples_org = 100
-    num_samples_syn = 300
+    args = parse_args()
+    num_samples_org = args.num_samples_org
+    num_samples_syn = args.num_samples_syn
+    
 
     bank_codes = [100, 102, 104]
     datasets = [

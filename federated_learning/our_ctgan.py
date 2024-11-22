@@ -445,6 +445,10 @@ class CTGAN(BaseSynthesizer):
         Returns:
             numpy.ndarray or pandas.DataFrame
         """
+
+        device = next(self._generator.parameters()).device
+
+
         if condition_column is not None and condition_value is not None:
             condition_info = self._transformer.convert_column_name_value_to_id(
                 condition_column, condition_value)
@@ -458,7 +462,7 @@ class CTGAN(BaseSynthesizer):
         for i in range(steps):
             mean = torch.zeros(self._batch_size, self._embedding_dim)
             std = mean + 1
-            fakez = torch.normal(mean=mean, std=std).to(self._device)
+            fakez = torch.normal(mean=mean, std=std).to(device)
 
             if global_condition_vec is not None:
                 condvec = global_condition_vec.copy()
@@ -469,7 +473,7 @@ class CTGAN(BaseSynthesizer):
                 pass
             else:
                 c1 = condvec
-                c1 = torch.from_numpy(c1).to(self._device)
+                c1 = torch.from_numpy(c1).to(device)
                 fakez = torch.cat([fakez, c1], dim=1)
 
             fake = self._generator(fakez)

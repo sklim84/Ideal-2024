@@ -6,7 +6,7 @@ import torch
 import copy
 from collections import OrderedDict
 import warnings
-from utils import set_seed, evaluate_syn_data
+from utils import set_seed, evaluate_syn_data, parse_args
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -64,8 +64,9 @@ if __name__ == "__main__":
 
     device = initialize_device()
 
-    num_samples_org = 100   # each / total= x3
-    num_samples_syn = 300   # total
+    args = parse_args()
+    num_samples_org = args.num_samples_org
+    num_samples_syn = args.num_samples_syn
 
     bank_codes = [100, 102, 104]
 

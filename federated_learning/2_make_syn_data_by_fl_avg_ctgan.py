@@ -9,7 +9,7 @@ import torch
 
 from our_ctgan import CTGAN
 from our_data_transformer import DataTransformer
-from utils import set_seed, evaluate_syn_data
+from utils import set_seed, evaluate_syn_data, parse_args
 
 warnings.filterwarnings("ignore")
 
@@ -155,12 +155,16 @@ def merge_models(models, merged_data_transformer):
 
 
 if __name__ == "__main__":
+    args = parse_args()
     set_seed(2024)
 
     device = initialize_device()
 
-    num_samples_org = 100  # each / total= x3
-    num_samples_syn = 300  # total
+    #num_samples_org = 100  # each / total= x3
+    #num_samples_syn = 300  # total
+
+    num_samples_org = args.num_samples_org
+    num_samples_syn = args.num_samples_syn
 
     # FIX
     bank_codes = [100, 102, 104]

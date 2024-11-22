@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 from ctgan.synthesizers.tvae import TVAE
 
-from utils import set_seed, evaluate_syn_data
+from utils import set_seed, evaluate_syn_data, parse_args
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -63,8 +63,9 @@ if __name__ == "__main__":
 
     device = initialize_device()
 
-    num_samples_org = 100  # each / total= x3
-    num_samples_syn = 100  # each / total= x3
+    args = parse_args()
+    num_samples_org = args.num_samples_org
+    num_samples_syn = args.num_samples_syn
 
     bank_codes = [100, 102, 104]
     csv_files = [
@@ -93,7 +94,7 @@ if __name__ == "__main__":
                            epoch=10, pac=10)
 
         if model:
-            synthetic_data = model.sample(num_samples_syn)
+            synthetic_data = model.sample(int(num_samples_syn/3))
             synthetic_data['TRAN_AMT'] = synthetic_data['TRAN_AMT'].abs()
             all_synthetic_data = pd.concat([all_synthetic_data, synthetic_data], ignore_index=True)
         else:
@@ -104,7 +105,7 @@ if __name__ == "__main__":
     print("Combined Synthetic Data Generated:")
     print(all_synthetic_data)
 
-    syn_data_path = f'./datasets_syn/syn_type_lo_tvae_to_{num_samples_org * 3}_to_{num_samples_syn * 3}.csv'
+    syn_data_path = f'./datasets_syn/syn_type_lo_tvae_to_{num_samples_org * 3}_to_{num_samples_syn}.csv'
     all_synthetic_data.to_csv(syn_data_path, index=False)
 
     # evaluation
@@ -114,5 +115,5 @@ if __name__ == "__main__":
                                    model_name='tvae',
                                    method='local',
                                    num_org=num_samples_org * 3,
-                                   num_syn=num_samples_syn * 3)
+                                   num_syn=num_samples_syn)
     print(df_results)
