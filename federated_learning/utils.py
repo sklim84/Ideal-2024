@@ -77,7 +77,7 @@ def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, me
          real_data=df_org,
          synthetic_data=df_syn,
          key_fields=['HNDE_BANK_RPTV_CODE'],
-         sensitive_fields=['TRAN_AMT', 'OPENBANK_RPTV_CODE', 'FND_TPCD']
+         sensitive_fields=['OPENBANK_RPTV_CODE', 'FND_TPCD']
     )
 
     new_row = {
