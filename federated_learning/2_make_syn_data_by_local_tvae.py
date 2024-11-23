@@ -5,9 +5,11 @@ import pandas as pd
 import torch
 from ctgan.synthesizers.tvae import TVAE
 
-from utils import set_seed, evaluate_syn_data, parse_args
+from utils import set_seed, evaluate_syn_data
+from config import get_config
+import os
 
-warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore")
 
 
 def initialize_device():
@@ -22,8 +24,7 @@ def load_data(file_path, num_samples=1000):
     return data
 
 
-def train_tvae(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, dis_dim=16, batch_size=500, epoch=10,
-               pac=10):
+def train_tvae(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, dis_dim=16, batch_size=500, epoch=10):
     print("Data content (first 5 rows):")
     print(data[:5])
 
@@ -59,13 +60,15 @@ def train_tvae(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, di
 
 
 if __name__ == "__main__":
-    set_seed(2024)
+    args = get_config()
+    print(args)
+
+    set_seed(args.seed)
 
     device = initialize_device()
 
-    args = parse_args()
-    num_samples_org = args.num_samples_org
-    num_samples_syn = args.num_samples_syn
+    num_samples_org = int(args.num_samples_org / 3)
+    num_samples_syn = int(args.num_samples_syn / 3)
 
     bank_codes = [100, 102, 104]
     csv_files = [
@@ -89,10 +92,10 @@ if __name__ == "__main__":
         model = train_tvae(data=data,
                            total_columns=total_columns,
                            discrete_columns=discrete_columns,
-                           emb_dim=16,
-                           gen_dim=16, dis_dim=16,
-                           batch_size=500,
-                           epoch=10, pac=10)
+                           emb_dim=args.emb_dim,
+                           gen_dim=args.gen_dim, dis_dim=args.dis_dim,
+                           batch_size=args.batch_size,
+                           epoch=args.epoch)
 
         if model:
             synthetic_data = model.sample(num_samples_syn)

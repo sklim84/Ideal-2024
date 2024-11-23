@@ -9,7 +9,9 @@ from ctgan.data_sampler import DataSampler
 
 from our_ctgan import CTGAN
 from our_data_transformer import DataTransformer
-from utils import set_seed, evaluate_syn_data, parse_args
+from utils import set_seed, evaluate_syn_data
+from config import get_config
+import os
 
 warnings.filterwarnings("ignore")
 
@@ -148,12 +150,12 @@ def merge_gradients(gradients_list, model):
 
 
 if __name__ == "__main__":
-    set_seed(2024)
-    device = initialize_device()
+    args = get_config()
+    print(args)
 
-    # Load and preprocess data
-    args = parse_args()
-    num_samples_org = args.num_samples_org
+    set_seed(args.seed)
+
+    num_samples_org = int(args.num_samples_org / 3)
     num_samples_syn = args.num_samples_syn
     
 
@@ -174,11 +176,11 @@ if __name__ == "__main__":
 
     # Initialize CTGAN template and empty model
     template_model = CTGAN(
-        embedding_dim=16,
-        generator_dim=(16, 16),
-        discriminator_dim=(16, 16),
-        batch_size=500,
-        epochs=10,
+        embedding_dim=args.emb_dim,
+        generator_dim=(args.gen_dim, args.gen_dim),
+        discriminator_dim=(args.dis_dim, args.dis_dim),
+        batch_size=args.batch_size,
+        epochs=args.epoch,
         pac=10
     )
 
@@ -222,16 +224,10 @@ if __name__ == "__main__":
     print(synthetic_data)
     # synthetic_data.to_csv('data/synthetic_data_fedsgd.csv', index=False)
 
-    syn_data_path = f'./datasets_syn/syn_type_fl_sgd_ctgan_{num_samples_org*3}_to_{num_samples_syn}.csv'
-    synthetic_data.to_csv(syn_data_path, index=False)
+    args.syn_data_path = os.path.join(args.syn_data_path, f'syn_type_{args.method}_{args.model_name}_{args.num_samples_org}_to_{args.num_samples_syn}.csv')
+    synthetic_data.to_csv(args.syn_data_path, index=False)
 
     # evaluation
-    df_results = evaluate_syn_data('./results/eval_results.csv',
-                                   './datasets/DATOP_HF_TRANS_100_102_104_iid.csv',
-                                   syn_data_path,
-                                   model_name='ctgan',
-                                   method='fedsgd',
-                                   num_org=num_samples_org*3,
-                                   num_syn=num_samples_syn)
+    df_results = evaluate_syn_data(args)
     print(df_results)
 
