@@ -27,8 +27,10 @@ def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, me
     columns = [
         'Timestamp', 'Model Name', 'Method', 'Num Org', 'Num Syn', 'Syn Dataset', 'Overall Quality Score',
         'Column Pair Trends',
-        'BASE_YM', 'TRAN_AMT', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD',
-        # 'CategoricalCAP'
+        'BASE_YM', 'TRAN_AMT',
+        'HNDE_BANK_RPTV_CODE',
+        'OPENBANK_RPTV_CODE', 'FND_TPCD',
+        'CategoricalCAP'
     ]
 
     if os.path.exists(results_path):
@@ -67,7 +69,7 @@ def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, me
         "BASE_YM": column_shapes.loc[column_shapes["Column"] == "BASE_YM", "Score"].values[0],
         "TRAN_AMT": column_shapes.loc[column_shapes["Column"] == "TRAN_AMT", "Score"].values[0],
         "HNDE_BANK_RPTV_CODE":
-            column_shapes.loc[column_shapes["Column"] == "HNDE_BANK_RPTV_CODE", "Score"].values[0],
+           column_shapes.loc[column_shapes["Column"] == "HNDE_BANK_RPTV_CODE", "Score"].values[0],
         "OPENBANK_RPTV_CODE":
             column_shapes.loc[column_shapes["Column"] == "OPENBANK_RPTV_CODE", "Score"].values[0],
         "FND_TPCD": column_shapes.loc[column_shapes["Column"] == "FND_TPCD", "Score"].values[0],

@@ -75,8 +75,8 @@ if __name__ == "__main__":
     ]
 
     all_synthetic_data = pd.DataFrame()
-
-    for file_path in csv_files:
+    
+    for idx, file_path in enumerate(csv_files):
         print(f"Processing file: {file_path}")
         data = load_data(file_path, num_samples=num_samples_org)
 
@@ -85,6 +85,7 @@ if __name__ == "__main__":
         total_columns = data.columns
         discrete_columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD']
 
+        # model = train_ctgan(data)
         model = train_tvae(data=data,
                            total_columns=total_columns,
                            discrete_columns=discrete_columns,
@@ -94,26 +95,20 @@ if __name__ == "__main__":
                            epoch=10, pac=10)
 
         if model:
-            synthetic_data = model.sample(int(num_samples_syn/3))
+            synthetic_data = model.sample(num_samples_syn)
             synthetic_data['TRAN_AMT'] = synthetic_data['TRAN_AMT'].abs()
-            all_synthetic_data = pd.concat([all_synthetic_data, synthetic_data], ignore_index=True)
         else:
             print(f"Failed to train model for {file_path}")
 
-    # 합성 데이터 전체를 하나의 CSV 파일로 저장
-    # all_synthetic_data.to_csv('data/synthetic_data_type3.csv', index=False)
-    print("Combined Synthetic Data Generated:")
-    print(all_synthetic_data)
+        syn_data_path = f'./datasets_syn/syn_type_lo_tave_to_{num_samples_org*3}_to_{num_samples_syn}_{bank_codes[idx]}.csv'
+        synthetic_data.to_csv(syn_data_path, index=False)
 
-    syn_data_path = f'./datasets_syn/syn_type_lo_tvae_to_{num_samples_org * 3}_to_{num_samples_syn}.csv'
-    all_synthetic_data.to_csv(syn_data_path, index=False)
-
-    # evaluation
-    df_results = evaluate_syn_data('./results/eval_results.csv',
+        # evaluation
+        df_results = evaluate_syn_data('./results/eval_results.csv',
                                    './datasets/DATOP_HF_TRANS_100_102_104_iid.csv',
                                    syn_data_path,
                                    model_name='tvae',
                                    method='local',
-                                   num_org=num_samples_org * 3,
+                                   num_org=num_samples_org*3,
                                    num_syn=num_samples_syn)
-    print(df_results)
+        print(df_results)
