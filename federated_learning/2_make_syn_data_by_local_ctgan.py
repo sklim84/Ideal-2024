@@ -1,13 +1,17 @@
-import warnings
-
 import numpy as np
 import pandas as pd
+import syft as sy
+from ctgan import CTGAN
 import torch
-from ctgan.synthesizers.tvae import TVAE
+import copy
+from collections import OrderedDict
+import glob
+import warnings
+from utils import set_seed, evaluate_syn_data
+from config import get_config
+import os
 
-from utils import set_seed, evaluate_syn_data, parse_args
-
-warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore")
 
 
 def initialize_device():
@@ -22,8 +26,7 @@ def load_data(file_path, num_samples=1000):
     return data
 
 
-def train_tvae(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, dis_dim=16, batch_size=500, epoch=10,
-               pac=10):
+def train_ctgan(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, dis_dim=16, batch_size=500, epoch=10, pac=10):
     print("Data content (first 5 rows):")
     print(data[:5])
 
@@ -43,14 +46,14 @@ def train_tvae(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, di
     # columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD', 'TRAN_AMT']
     data_df = pd.DataFrame(data_list, columns=total_columns)
 
-    model = TVAE(
+    model = CTGAN(
         embedding_dim=emb_dim,
-        compress_dims=(gen_dim, gen_dim),
-        decompress_dims=(dis_dim, dis_dim),
+        generator_dim=(gen_dim, gen_dim),
+        discriminator_dim=(dis_dim, dis_dim),
         batch_size=batch_size,
-        epochs=epoch
+        epochs=epoch,
+        pac=pac
     )
-
     print(model)
 
     model.fit(data_df, discrete_columns=discrete_columns)
@@ -59,13 +62,15 @@ def train_tvae(data, total_columns, discrete_columns, emb_dim=16, gen_dim=16, di
 
 
 if __name__ == "__main__":
-    set_seed(2024)
+    args = get_config()
+    print(args)
+
+    set_seed(args.seed)
 
     device = initialize_device()
 
-    args = parse_args()
-    num_samples_org = args.num_samples_org
-    num_samples_syn = args.num_samples_syn
+    num_samples_org = int(args.num_samples_org / 3)
+    num_samples_syn = int(args.num_samples_syn / 3)
 
     bank_codes = [100, 102, 104]
     csv_files = [
@@ -85,16 +90,17 @@ if __name__ == "__main__":
         total_columns = data.columns
         discrete_columns = ['BASE_YM', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD']
 
-        model = train_tvae(data=data,
-                           total_columns=total_columns,
-                           discrete_columns=discrete_columns,
-                           emb_dim=16,
-                           gen_dim=16, dis_dim=16,
-                           batch_size=500,
-                           epoch=10, pac=10)
+        # model = train_ctgan(data)
+        model = train_ctgan(data=data,
+                            total_columns=total_columns,
+                            discrete_columns=discrete_columns,
+                            emb_dim=args.emb_dim,
+                            gen_dim=args.gen_dim, dis_dim=args.dis_dim,
+                            epoch=args.epoch, pac=10,
+                            batch_size=args.batch_size)
 
         if model:
-            synthetic_data = model.sample(int(num_samples_syn/3))
+            synthetic_data = model.sample(num_samples_syn)
             synthetic_data['TRAN_AMT'] = synthetic_data['TRAN_AMT'].abs()
             all_synthetic_data = pd.concat([all_synthetic_data, synthetic_data], ignore_index=True)
         else:
@@ -105,15 +111,10 @@ if __name__ == "__main__":
     print("Combined Synthetic Data Generated:")
     print(all_synthetic_data)
 
-    syn_data_path = f'./datasets_syn/syn_type_lo_tvae_to_{num_samples_org * 3}_to_{num_samples_syn}.csv'
-    all_synthetic_data.to_csv(syn_data_path, index=False)
+    args.syn_data_path = os.path.join(args.syn_data_path, f'syn_type_{args.method}_{args.model_name}_{args.num_samples_org}_to_{args.num_samples_syn}.csv')
+    all_synthetic_data.to_csv(args.syn_data_path, index=False)
 
     # evaluation
-    df_results = evaluate_syn_data('./results/eval_results.csv',
-                                   './datasets/DATOP_HF_TRANS_100_102_104_iid.csv',
-                                   syn_data_path,
-                                   model_name='tvae',
-                                   method='local',
-                                   num_org=num_samples_org * 3,
-                                   num_syn=num_samples_syn)
+    df_results = evaluate_syn_data(args)
     print(df_results)
+

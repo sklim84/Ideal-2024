@@ -11,6 +11,7 @@ from sdmetrics.single_table import CategoricalCAP
 from sdv.metadata import SingleTableMetadata
 import argparse
 
+
 # 시드 고정 함수
 def set_seed(seed):
     torch.manual_seed(seed)
@@ -23,23 +24,23 @@ def set_seed(seed):
 
 
 # 합성데이터 평가 함수
-def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, method, num_org, num_syn):
-    columns = [
-        'Timestamp', 'Model Name', 'Method', 'Num Org', 'Num Syn', 'Syn Dataset', 'Overall Quality Score',
-        'Column Pair Trends',
-        'BASE_YM', 'TRAN_AMT', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD',
-        # 'CategoricalCAP'
-    ]
+def evaluate_syn_data(args):
+    args_dict = vars(args)
 
-    if os.path.exists(results_path):
-        df_results = pd.read_csv(results_path)
+    columns = ['Timestamp', 'method', 'model_name', 'num_samples_org', 'num_samples_syn', 'org_data_path', 'syn_data_path',
+               'results_path', 'seed', 'epoch', 'batch_size', 'emb_dim', 'gen_dim', 'dis_dim', 'Overall Quality Score',
+               'Column Pair Trends', 'BASE_YM', 'TRAN_AMT', 'HNDE_BANK_RPTV_CODE', 'OPENBANK_RPTV_CODE', 'FND_TPCD', 'CategoricalCAP']
+
+    if os.path.exists(args.results_path):
+        df_results = pd.read_csv(args.results_path)
     else:
+        print('##### new dataframe')
         df_results = pd.DataFrame(columns=columns)
 
     # original dataset
-    df_org = pd.read_csv(org_data_path)
+    df_org = pd.read_csv(args.org_data_path)
     # synthetic dataset
-    df_syn = pd.read_csv(syn_data_path)
+    df_syn = pd.read_csv(args.syn_data_path)
 
     # metadata
     metadata = SingleTableMetadata()
@@ -55,9 +56,7 @@ def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, me
 
     validity_score = quality_report.get_score()
     column_shapes = quality_report.get_details("Column Shapes")
-
     print(column_shapes.columns)
-
 
     column_pair_trends = quality_report.get_details("Column Pair Trends")
     column_pair_trends_score = column_pair_trends[
@@ -74,32 +73,28 @@ def evaluate_syn_data(results_path, org_data_path, syn_data_path, model_name, me
     }
 
     ccap_score = CategoricalCAP.compute(
-         real_data=df_org,
-         synthetic_data=df_syn,
-         key_fields=['HNDE_BANK_RPTV_CODE'],
-         sensitive_fields=['OPENBANK_RPTV_CODE', 'FND_TPCD']
+        real_data=df_org,
+        synthetic_data=df_syn,
+        key_fields=['HNDE_BANK_RPTV_CODE'],
+        sensitive_fields=['OPENBANK_RPTV_CODE', 'FND_TPCD']
     )
 
     new_row = {
         'Timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'Model Name': model_name,
-        'Method': method,
-        'Num Org': num_org,
-        'Num Syn': num_syn,
-        'Syn Dataset': syn_data_path,
+        **args_dict,
         'Overall Quality Score': validity_score,
         'Column Pair Trends': column_pair_trends_score,
         **column_scores,
-         'CategoricalCAP': ccap_score
+        'CategoricalCAP': ccap_score
     }
     df_results = pd.concat([df_results, pd.DataFrame([new_row])], ignore_index=True)
-    df_results.to_csv(results_path, index=False)
+    df_results.to_csv(args.results_path, index=False)
 
     return df_results
 
 # 명령줄 인자 설정 함수
-def parse_args():
-    parser = argparse.ArgumentParser(description="Federated CTGAN Training Script")
-    parser.add_argument("--num_samples_org", type=int, default=100, help="Number of original samples per client dataset")
-    parser.add_argument("--num_samples_syn", type=int, default=300, help="Number of synthetic samples to generate")
-    return parser.parse_args()
+# def parse_args():
+#     parser = argparse.ArgumentParser(description="Federated CTGAN Training Script")
+#     parser.add_argument("--num_samples_org", type=int, default=100, help="Number of original samples per client dataset")
+#     parser.add_argument("--num_samples_syn", type=int, default=300, help="Number of synthetic samples to generate")
+#     return parser.parse_args()
